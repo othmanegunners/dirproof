@@ -1,0 +1,26 @@
+name: Bug report
+description: Report reproducible problems with dirproof
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: issue
+    attributes:
+      label: What happened?
+      description: Describe the unexpected behavior and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: Provide safe, synthetic test data and commands. Never include secrets.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS and Python version
+      placeholder: "Windows 11 / Python 3.12"
+    validations:
+      required: true
