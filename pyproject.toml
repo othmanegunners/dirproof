@@ -24,6 +24,12 @@ classifiers = [
   "Topic :: Utilities",
 ]
 
+[project.urls]
+Homepage = "https://github.com/othmanegunners/dirproof"
+Repository = "https://github.com/othmanegunners/dirproof"
+Issues = "https://github.com/othmanegunners/dirproof/issues"
+Changelog = "https://github.com/othmanegunners/dirproof/blob/main/CHANGELOG.md"
+
 [project.scripts]
 dirproof = "dirproof.cli:main"
 
