@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dirproof-cli"
+version = "0.1.0"
+description = "Offline deterministic SHA-256 snapshots and directory verification"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{name = "dirproof contributors"}]
+keywords = ["cli", "sha256", "integrity", "backup", "verification"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Utilities",
+]
+
+[project.scripts]
+dirproof = "dirproof.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
