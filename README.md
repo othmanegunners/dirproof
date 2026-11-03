@@ -16,6 +16,14 @@
 
 ## Install
 
+Once the package is published on PyPI, install it with:
+
+```bash
+python -m pip install dirproof-cli
+```
+
+You can also install directly from GitHub:
+
 ```bash
 git clone https://github.com/othmanegunners/dirproof.git
 cd dirproof
