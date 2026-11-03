@@ -9,9 +9,13 @@ import tempfile
 from pathlib import Path
 
 from .core import ManifestError, compare, read_manifest, snapshot
+from .ignore import read_exclusion_patterns
 
 
-def show_changes(changes: dict[str, list[str]]) -> bool:
+def show_changes(changes: dict[str, list[str]], output_format: str = 'text') -> bool:
+    if output_format == 'json':
+        print(json.dumps(changes, indent=2, ensure_ascii=False, sort_keys=True))
+        return any(changes.values())
     found = False
     for category in ('added', 'removed', 'changed'):
         for path in changes[category]:
@@ -46,17 +50,25 @@ def main(argv: list[str] | None = None) -> int:
     snap.add_argument('directory', type=Path)
     snap.add_argument('--out', type=Path, default=Path('dirproof-manifest.json'))
     snap.add_argument('--exclude', action='append', default=[], metavar='GLOB', help='Repeatable relative-path glob')
+    snap.add_argument('--exclude-from', action='append', default=[], type=Path, metavar='FILE',
+                      help='Read glob patterns from a UTF-8 file (one per line)')
     verify = sub.add_parser('verify', help='Verify current files against a saved inventory')
     verify.add_argument('directory', type=Path)
     verify.add_argument('--manifest', required=True, type=Path)
+    verify.add_argument('--format', choices=('text', 'json'), default='text',
+                        help='Human-readable or machine-readable change report')
     diff = sub.add_parser('diff', help='Compare two saved inventories')
     diff.add_argument('before', type=Path)
     diff.add_argument('after', type=Path)
+    diff.add_argument('--format', choices=('text', 'json'), default='text',
+                      help='Human-readable or machine-readable change report')
     args = parser.parse_args(argv)
     try:
         if args.cmd == 'snapshot':
             root, output = args.directory.expanduser().resolve(), args.out.expanduser().resolve()
             excludes = list(args.exclude)
+            for exclude_file in args.exclude_from:
+                excludes.extend(read_exclusion_patterns(exclude_file))
             if output.is_relative_to(root):
                 own_path = output.relative_to(root).as_posix()
                 if own_path not in excludes:
@@ -67,8 +79,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.cmd == 'verify':
             baseline = read_manifest(args.manifest)
-            return int(show_changes(compare(baseline, snapshot(args.directory, baseline['exclude']))))
-        return int(show_changes(compare(read_manifest(args.before), read_manifest(args.after))))
+            return int(show_changes(compare(baseline, snapshot(args.directory, baseline['exclude'])), args.format))
+        return int(show_changes(compare(read_manifest(args.before), read_manifest(args.after)), args.format))
     except (OSError, ValueError, ManifestError) as exc:
         print(f'Error: {exc}', file=sys.stderr)
         return 2

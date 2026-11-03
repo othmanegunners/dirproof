@@ -9,7 +9,8 @@
 - **`snapshot`** — create a stable, sorted JSON inventory of a directory.
 - **`verify`** — list added, removed, or changed files compared with a snapshot.
 - **`diff`** — compare two previously saved snapshots without rescanning a folder.
-- **`--exclude`** — ignore paths matched by repeatable glob patterns.
+- **`--exclude` / `--exclude-from`** — ignore matching paths using command-line glob patterns or reusable UTF-8 pattern files.
+- **`--format json`** — emit machine-readable results for CI, scripts, and dashboards.
 - **Portable** — Python 3.10+ on macOS, Linux, and Windows.
 - **Non-destructive** — scans do not edit files or follow symlinks.
 
@@ -32,6 +33,12 @@ dirproof verify ./my-project --manifest ./snapshot.json
 
 # Exclude Git metadata and compiled Python files
 dirproof snapshot ./my-project --out ./snapshot.json --exclude '.git/**' --exclude '*.pyc'
+
+# Load exclusions from a file (blank lines and # comments are ignored)
+dirproof snapshot ./my-project --out ./snapshot.json --exclude-from .dirproofignore
+
+# Export a change report suitable for CI parsing
+dirproof verify ./my-project --manifest ./snapshot.json --format json
 ```
 
 To compare two snapshots:
@@ -85,7 +92,7 @@ python -m pip install -e .
 python -m unittest discover -s tests -v
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/design.md](docs/design.md) and [LICENSE](LICENSE).
+See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/usage.md](docs/usage.md), [docs/design.md](docs/design.md), [SECURITY.md](SECURITY.md), and [LICENSE](LICENSE).
 
 ## Important security note
 

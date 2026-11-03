@@ -1,10 +1,14 @@
+import contextlib
 import hashlib
+import io
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
 from dirproof.cli import main
 from dirproof.core import ManifestError, compare, read_manifest, snapshot, validate
+from dirproof.ignore import read_exclusion_patterns
 
 
 class DirproofTests(unittest.TestCase):
@@ -78,6 +82,90 @@ class DirproofTests(unittest.TestCase):
         f.write_text('{not json')
         with self.assertRaises(ManifestError):
             read_manifest(f)
+
+    def test_exclusion_file(self):
+        (self.root / 'ignore.txt').write_text('# comment\n\n*.log\ncache/**\n')
+        self.assertEqual(read_exclusion_patterns(self.root / 'ignore.txt'), ['*.log', 'cache/**'])
+        (self.root / 'keep.txt').write_text('keep')
+        (self.root / 'skip.log').write_text('log')
+        (self.root / 'cache').mkdir()
+        (self.root / 'cache' / 'generated.txt').write_text('hidden')
+        out = self.root / 'snapshot.json'
+        self.assertEqual(main(['snapshot', str(self.root), '--out', str(out),
+                               '--exclude-from', str(self.root / 'ignore.txt')]), 0)
+        paths = [entry['path'] for entry in read_manifest(out)['files']]
+        self.assertIn('keep.txt', paths)
+        self.assertNotIn('skip.log', paths)
+        self.assertNotIn('cache/generated.txt', paths)
+
+    def test_json_report_when_no_change(self):
+        (self.root / 'a.txt').write_text('hi')
+        output = self.root / 'manifest.json'
+        self.assertEqual(main(['snapshot', str(self.root), '--out', str(output)]), 0)
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            code = main(['verify', str(self.root), '--manifest', str(output), '--format', 'json'])
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(buffer.getvalue()), {'added': [], 'removed': [], 'changed': []})
+
+    def test_json_report_when_changed(self):
+        f = self.root / 'f.txt'
+        f.write_text('old')
+        out = self.root / 'manifest.json'
+        self.assertEqual(main(['snapshot', str(self.root), '--out', str(out)]), 0)
+        f.write_text('new')
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            code = main(['verify', str(self.root), '--manifest', str(out), '--format', 'json'])
+        self.assertEqual(code, 1)
+        self.assertEqual(json.loads(buffer.getvalue())['changed'], ['f.txt'])
+
+    def test_json_diff(self):
+        (self.root / 'f').write_text('a')
+        a = self.root / 'a.json'
+        b = self.root / 'b.json'
+        self.assertEqual(main(['snapshot', str(self.root), '--out', str(a)]), 0)
+        (self.root / 'f').write_text('b')
+        self.assertEqual(main(['snapshot', str(self.root), '--out', str(b),
+                               '--exclude', 'a.json']), 0)
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            code = main(['diff', str(a), str(b), '--format', 'json'])
+        self.assertEqual(code, 1)
+        self.assertIn('f', json.loads(buffer.getvalue())['changed'])
+
+    def test_bad_exclusion_file_reports_error(self):
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            code = main(['snapshot', str(self.root), '--exclude-from',
+                         str(self.root / 'missing.txt')])
+        self.assertEqual(code, 2)
+        self.assertIn('Error:', stderr.getvalue())
+
+    def test_empty_directory(self):
+        self.assertEqual(snapshot(self.root)['files'], [])
+
+    def test_same_size_different_bytes(self):
+        f = self.root / 'data'
+        f.write_bytes(b'abcd')
+        first = snapshot(self.root)
+        f.write_bytes(b'efgh')
+        self.assertEqual(compare(first, snapshot(self.root))['changed'], ['data'])
+
+    def test_rejects_duplicate_manifest_paths(self):
+        entry = {'path': 'same', 'size': 0, 'sha256': '0' * 64}
+        bad = {'version': 1, 'algorithm': 'sha256', 'exclude': [], 'files': [entry, dict(entry)]}
+        with self.assertRaises(ManifestError):
+            validate(bad)
+
+    def test_filename_unicode_and_spaces(self):
+        (self.root / 'résumé file.txt').write_text('été', encoding='utf-8')
+        self.assertEqual(snapshot(self.root)['files'][0]['path'], 'résumé file.txt')
+
+    def test_empty_file_checksum(self):
+        (self.root / 'empty').touch()
+        self.assertEqual(snapshot(self.root)['files'][0]['sha256'],
+                         hashlib.sha256(b'').hexdigest())
 
 
 if __name__ == '__main__':

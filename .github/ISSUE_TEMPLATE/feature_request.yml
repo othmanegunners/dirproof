@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest a useful improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: usecase
+    attributes:
+      label: Problem or use case
+      description: What task should dirproof make easier?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Include a small command-line example if you have one.
+    validations:
+      required: false

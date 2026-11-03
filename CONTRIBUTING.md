@@ -8,6 +8,6 @@ Thanks for helping improve dirproof! Real bug reports, documentation improvement
 4. Add tests when changing behavior. Run `python -m unittest discover -s tests -v`.
 5. Open a pull request explaining what changed and why.
 
-Good first contributions include Unicode file-name tests, Windows compatibility tests, progress reporting, and more glob examples.
+Start with one of the labeled [good first issues](https://github.com/othmanegunners/dirproof/issues). Good first contributions include Unicode file-name tests, Windows compatibility tests, progress reporting, and more glob examples.
 
 Do not include real credentials, sensitive file contents, or private customer data in public issues or tests.
